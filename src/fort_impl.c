@@ -582,7 +582,7 @@ int ft_table_wwrite_ln(ft_table_t *table, size_t rows, size_t cols, const wchar_
 const char *ft_to_string(const ft_table_t *table)
 {
     typedef char char_type;
-    const enum str_buf_type buf_type = CharBuf;
+    const enum str_buf_type buf_type = CHAR_BUF;
     const char *space_char = " ";
     const char *new_line_char = "\n";
 #define EMPTY_STRING ""
@@ -682,7 +682,7 @@ clear:
 const wchar_t *ft_to_wstring(const ft_table_t *table)
 {
     typedef wchar_t char_type;
-    const enum str_buf_type buf_type = WCharBuf;
+    const enum str_buf_type buf_type = W_CHAR_BUF;
     const char *space_char = " ";
     const char *new_line_char = "\n";
 #define EMPTY_STRING L""

@@ -25,7 +25,7 @@ static ptrdiff_t wcs_iter_width(const wchar_t *beg, const wchar_t *end)
 static size_t buf_str_len(const string_buffer_t *buf)
 {
     assert(buf);
-    if (buf->type == CharBuf) {
+    if (buf->type == CHAR_BUF) {
         return strlen(buf->str.cstr);
     } else {
         return wcslen(buf->str.wstr);
@@ -160,7 +160,7 @@ void wstr_n_substring(const wchar_t *str, wchar_t ch_separator, size_t n, const 
 FT_INTERNAL
 string_buffer_t *create_string_buffer(size_t number_of_chars, enum str_buf_type type)
 {
-    size_t sz = (number_of_chars) * (type == CharBuf ? sizeof(char) : sizeof(wchar_t));
+    size_t sz = (number_of_chars) * (type == CHAR_BUF ? sizeof(char) : sizeof(wchar_t));
     string_buffer_t *result = (string_buffer_t *)F_MALLOC(sizeof(string_buffer_t));
     if (result == NULL)
         return NULL;
@@ -172,10 +172,10 @@ string_buffer_t *create_string_buffer(size_t number_of_chars, enum str_buf_type 
     result->data_sz = sz;
     result->type = type;
 
-    if (sz && type == CharBuf) {
+    if (sz && type == CHAR_BUF) {
         result->str.cstr[0] = '\0';
 #ifdef FT_HAVE_WCHAR
-    } else if (sz && type == WCharBuf) {
+    } else if (sz && type == W_CHAR_BUF) {
         result->str.wstr[0] = L'\0';
 #endif /* FT_HAVE_WCHAR */
     }
@@ -202,14 +202,14 @@ string_buffer_t *copy_string_buffer(const string_buffer_t *buffer)
     if (result == NULL)
         return NULL;
     switch (buffer->type) {
-        case CharBuf:
+        case CHAR_BUF:
             if (FT_IS_ERROR(fill_buffer_from_string(result, buffer->str.cstr))) {
                 destroy_string_buffer(result);
                 return NULL;
             }
             break;
 #ifdef FT_HAVE_WCHAR
-        case WCharBuf:
+        case W_CHAR_BUF:
             if (FT_IS_ERROR(fill_buffer_from_wstring(result, buffer->str.wstr))) {
                 destroy_string_buffer(result);
                 return NULL;
@@ -250,7 +250,7 @@ fort_status_t fill_buffer_from_string(string_buffer_t *buffer, const char *str)
 
     F_FREE(buffer->str.data);
     buffer->str.cstr = copy;
-    buffer->type = CharBuf;
+    buffer->type = CHAR_BUF;
 
     return FT_SUCCESS;
 }
@@ -269,7 +269,7 @@ fort_status_t fill_buffer_from_wstring(string_buffer_t *buffer, const wchar_t *s
 
     F_FREE(buffer->str.data);
     buffer->str.wstr = copy;
-    buffer->type = WCharBuf;
+    buffer->type = W_CHAR_BUF;
 
     return FT_SUCCESS;
 }
@@ -282,7 +282,7 @@ size_t buffer_text_height(const string_buffer_t *buffer)
     if (buffer == NULL || buffer->str.data == NULL || buf_str_len(buffer) == 0) {
         return 0;
     }
-    if (buffer->type == CharBuf)
+    if (buffer->type == CHAR_BUF)
         return 1 + strchr_count(buffer->str.cstr, '\n');
     else
         return 1 + wstrchr_count(buffer->str.wstr, L'\n');
@@ -293,7 +293,7 @@ FT_INTERNAL
 size_t buffer_text_width(const string_buffer_t *buffer)
 {
     size_t max_length = 0;
-    if (buffer->type == CharBuf) {
+    if (buffer->type == CHAR_BUF) {
         size_t n = 0;
         while (1) {
             const char *beg = NULL;
@@ -527,7 +527,7 @@ FT_INTERNAL
 size_t string_buffer_capacity(const string_buffer_t *buffer)
 {
     assert(buffer);
-    if (buffer->type == CharBuf)
+    if (buffer->type == CHAR_BUF)
         return buffer->data_sz;
     else
         return buffer->data_sz / sizeof(wchar_t);

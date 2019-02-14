@@ -208,8 +208,8 @@ void test_str_n_substring(void)
 
 void test_buffer_text_width(void)
 {
-    string_buffer_t *buffer = create_string_buffer(200, CharBuf);
-    buffer->type = CharBuf;
+    string_buffer_t *buffer = create_string_buffer(200, CHAR_BUF);
+    buffer->type = CHAR_BUF;
     char *old_value = buffer->str.cstr;
 
     buffer->str.cstr = (char *)"";
@@ -231,7 +231,7 @@ void test_buffer_text_width(void)
     assert_true(buffer_text_width(buffer) == 7);
 
 #if defined(FT_HAVE_WCHAR)
-    buffer->type = WCharBuf;
+    buffer->type = W_CHAR_BUF;
 
     buffer->str.wstr = (wchar_t *)L"";
     assert_true(buffer_text_width(buffer) == 0);
@@ -252,7 +252,7 @@ void test_buffer_text_width(void)
     assert_true(buffer_text_width(buffer) == 7);
 #endif
 
-    buffer->type = CharBuf;
+    buffer->type = CHAR_BUF;
     buffer->str.cstr = old_value;
     destroy_string_buffer(buffer);
 }
@@ -260,8 +260,8 @@ void test_buffer_text_width(void)
 
 void test_buffer_text_height(void)
 {
-    string_buffer_t *buffer = create_string_buffer(200, CharBuf);
-    buffer->type = CharBuf;
+    string_buffer_t *buffer = create_string_buffer(200, CHAR_BUF);
+    buffer->type = CHAR_BUF;
     char *old_value = buffer->str.cstr;
 
     buffer->str.cstr = (char *)"";
@@ -286,7 +286,7 @@ void test_buffer_text_height(void)
     assert_true(buffer_text_height(buffer) == 4);
 
 #if defined(FT_HAVE_WCHAR)
-    buffer->type = WCharBuf;
+    buffer->type = W_CHAR_BUF;
     buffer->str.wstr = (wchar_t *)L"";
     assert_true(buffer_text_height(buffer) == 0);
 
@@ -310,7 +310,7 @@ void test_buffer_text_height(void)
 #endif
 
 
-    buffer->type = CharBuf;
+    buffer->type = CHAR_BUF;
     buffer->str.cstr = old_value;
     destroy_string_buffer(buffer);
 }

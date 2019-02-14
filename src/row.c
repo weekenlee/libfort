@@ -784,7 +784,7 @@ fort_row_t *create_row_from_fmt_string(const char  *fmt, va_list *va_args)
 #define CREATE_ROW_FROM_STRING create_row_from_string
 #define NUMBER_OF_COLUMNS_IN_FORMAT_STRING number_of_columns_in_format_string
 #define FILL_CELL_FROM_STRING fill_cell_from_string
-#define STR_BUF_TYPE CharBuf
+#define STR_BUF_TYPE CHAR_BUF
 
     string_buffer_t *buffer = create_string_buffer(DEFAULT_STR_BUF_SIZE, STR_BUF_TYPE);
     if (buffer == NULL)
@@ -870,7 +870,7 @@ fort_row_t *create_row_from_fmt_wstring(const wchar_t  *fmt, va_list *va_args)
 #define CREATE_ROW_FROM_STRING create_row_from_wstring
 #define NUMBER_OF_COLUMNS_IN_FORMAT_STRING number_of_columns_in_format_wstring
 #define FILL_CELL_FROM_STRING fill_cell_from_wstring
-#define STR_BUF_TYPE WCharBuf
+#define STR_BUF_TYPE W_CHAR_BUF
 
     string_buffer_t *buffer = create_string_buffer(DEFAULT_STR_BUF_SIZE, STR_BUF_TYPE);
     if (buffer == NULL)

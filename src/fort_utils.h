@@ -53,6 +53,12 @@ enum F_BOOL {
     F_TRUE = 1
 };
 
+enum str_buf_type {
+    CHAR_BUF,
+#ifdef FT_HAVE_WCHAR
+    W_CHAR_BUF
+#endif /* FT_HAVE_WCHAR */
+};
 
 #define FT_STR_2_CAT_(arg1, arg2) \
     arg1##arg2

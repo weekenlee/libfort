@@ -14,7 +14,7 @@ fort_cell_t *create_cell(void)
     fort_cell_t *cell = (fort_cell_t *)F_CALLOC(sizeof(fort_cell_t), 1);
     if (cell == NULL)
         return NULL;
-    cell->str_buffer = create_string_buffer(DEFAULT_STR_BUF_SIZE, CharBuf);
+    cell->str_buffer = create_string_buffer(DEFAULT_STR_BUF_SIZE, CHAR_BUF);
     if (cell->str_buffer == NULL) {
         F_FREE(cell);
         return NULL;

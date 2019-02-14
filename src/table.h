@@ -10,6 +10,7 @@ struct ft_table {
     size_t cur_row;
     size_t cur_col;
     vector_t *separators;
+    enum str_buf_type char_type;
 };
 
 FT_INTERNAL

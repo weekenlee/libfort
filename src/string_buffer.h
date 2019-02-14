@@ -3,17 +3,6 @@
 
 #include "fort_utils.h"
 
-
-/*****************************************************************************
- *               STRING BUFFER
- * ***************************************************************************/
-enum str_buf_type {
-    CharBuf,
-#ifdef FT_HAVE_WCHAR
-    WCharBuf
-#endif /* FT_HAVE_WCHAR */
-};
-
 struct string_buffer {
     union {
         char *cstr;
