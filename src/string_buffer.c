@@ -213,6 +213,29 @@ void wstr_n_substring(const wchar_t *str, wchar_t ch_separator, size_t n, const 
 }
 #endif /* FT_HAVE_WCHAR */
 
+#if defined(FT_HAVE_UTF8)
+FT_INTERNAL
+void utf8_n_substring(const void *str, utf8_int32_t ch_separator, size_t n, const void **begin, const void **end)
+{
+    const char *beg = utf8_n_substring_beg(str, ch_separator, n);
+    if (beg == NULL) {
+        *begin = NULL;
+        *end = NULL;
+        return;
+    }
+
+    const char *en = utf8chr(beg, ch_separator);
+    if (en == NULL) {
+        en = (const char *)str + strlen(str);
+    }
+
+    *begin = beg;
+    *end = en;
+    return;
+}
+#endif /* FT_HAVE_UTF8 */
+
+
 
 FT_INTERNAL
 string_buffer_t *create_string_buffer(size_t number_of_chars, enum str_buf_type type)
@@ -341,8 +364,13 @@ size_t buffer_text_visible_height(const string_buffer_t *buffer)
     }
     if (buffer->type == CHAR_BUF)
         return 1 + strchr_count(buffer->str.cstr, '\n');
+#ifdef FT_HAVE_WCHAR
     else
         return 1 + wstrchr_count(buffer->str.wstr, L'\n');
+#endif /* FT_HAVE_WCHAR */
+
+    assert(0);
+    return 0;
 }
 
 

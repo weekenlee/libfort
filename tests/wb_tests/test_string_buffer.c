@@ -225,6 +225,9 @@ void test_str_n_substring(void)
     wstr_n_substring(empty_wstr, L'\n', 2, &wbeg, &wend);
     assert_true(wbeg == NULL && wend == NULL);
 #endif
+#ifdef FT_HAVE_UTF8
+
+#endif
 
 
     str_n_substring(NULL, '\n', 0, &beg, &end);
