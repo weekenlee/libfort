@@ -34,7 +34,7 @@ fort_status_t fill_buffer_from_wstring(string_buffer_t *buffer, const wchar_t *s
 #endif /* FT_HAVE_WCHAR */
 
 FT_INTERNAL
-size_t buffer_text_height(const string_buffer_t *buffer);
+size_t buffer_text_visible_height(const string_buffer_t *buffer);
 
 FT_INTERNAL
 size_t string_buffer_capacity(const string_buffer_t *buffer);
@@ -43,7 +43,7 @@ FT_INTERNAL
 void *buffer_get_data(string_buffer_t *buffer);
 
 FT_INTERNAL
-size_t buffer_text_width(const string_buffer_t *buffer);
+size_t buffer_text_visible_width(const string_buffer_t *buffer);
 
 FT_INTERNAL
 int buffer_printf(string_buffer_t *buffer, size_t buffer_row, char *buf, size_t total_buf_len,

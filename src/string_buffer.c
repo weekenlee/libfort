@@ -3,8 +3,12 @@
 #include "wcwidth.h"
 #include <assert.h>
 #include <stddef.h>
+#ifdef FT_HAVE_WCHAR
 #include <wchar.h>
-
+#endif
+#if defined(FT_HAVE_UTF8)
+#include "utf8.h"
+#endif
 
 static ptrdiff_t str_iter_width(const char *beg, const char *end)
 {
@@ -49,7 +53,7 @@ size_t strchr_count(const char *str, char ch)
     return count;
 }
 
-
+#ifdef FT_HAVE_WCHAR
 FT_INTERNAL
 size_t wstrchr_count(const wchar_t *str, wchar_t ch)
 {
@@ -65,6 +69,36 @@ size_t wstrchr_count(const wchar_t *str, wchar_t ch)
     }
     return count;
 }
+#endif
+
+
+// todo: do something with code below!!!!!!!!!!!!1
+
+
+#if defined(FT_HAVE_UTF8)
+FT_INTERNAL
+void *ut8next(const void *str)
+{
+    utf8_int32_t out_codepoint;
+    return utf8codepoint(str, &out_codepoint);
+}
+
+FT_INTERNAL
+size_t utf8chr_count(const void *str, utf8_int32_t ch)
+{
+    if (str == NULL)
+        return 0;
+
+    size_t count = 0;
+    str = utf8chr(str, ch);
+    while (str) {
+        count++;
+        str = ut8next(str);
+        str = utf8chr(str, ch);
+    }
+    return count;
+}
+#endif
 
 
 FT_INTERNAL
@@ -111,6 +145,29 @@ const wchar_t *wstr_n_substring_beg(const wchar_t *str, wchar_t ch_separator, si
     return str ? (str + 1) : NULL;
 }
 #endif /* FT_HAVE_WCHAR */
+
+#if defined(FT_HAVE_UTF8)
+FT_INTERNAL
+const void *utf8_n_substring_beg(const void *str, utf8_int32_t ch_separator, size_t n)
+{
+    if (str == NULL)
+        return NULL;
+
+    if (n == 0)
+        return str;
+
+    str = utf8chr(str, ch_separator);
+    --n;
+    while (n > 0) {
+        if (str == NULL)
+            return NULL;
+        --n;
+        str = ut8next(str);
+        str = utf8chr(str, ch_separator);
+    }
+    return str ? (ut8next(str)) : NULL;
+}
+#endif
 
 
 FT_INTERNAL
@@ -277,7 +334,7 @@ fort_status_t fill_buffer_from_wstring(string_buffer_t *buffer, const wchar_t *s
 
 
 FT_INTERNAL
-size_t buffer_text_height(const string_buffer_t *buffer)
+size_t buffer_text_visible_height(const string_buffer_t *buffer)
 {
     if (buffer == NULL || buffer->str.data == NULL || buf_str_len(buffer) == 0) {
         return 0;
@@ -290,7 +347,7 @@ size_t buffer_text_height(const string_buffer_t *buffer)
 
 
 FT_INTERNAL
-size_t buffer_text_width(const string_buffer_t *buffer)
+size_t buffer_text_visible_width(const string_buffer_t *buffer)
 {
     size_t max_length = 0;
     if (buffer->type == CHAR_BUF) {
@@ -347,11 +404,11 @@ int buffer_printf(string_buffer_t *buffer, size_t buffer_row, char *buf, size_t 
     size_t buf_len = total_buf_len - strlen(content_style_tag) - strlen(reset_content_style_tag);
 
     if (buffer == NULL || buffer->str.data == NULL
-        || buffer_row >= buffer_text_height(buffer) || buf_len == 0) {
+        || buffer_row >= buffer_text_visible_height(buffer) || buf_len == 0) {
         return -1;
     }
 
-    size_t content_width = buffer_text_width(buffer);
+    size_t content_width = buffer_text_visible_width(buffer);
     if ((buf_len - 1) < content_width)
         return -1;
 
@@ -444,11 +501,11 @@ int buffer_wprintf(string_buffer_t *buffer, size_t buffer_row, wchar_t *buf, siz
     size_t buf_len = total_buf_len - strlen(content_style_tag) - strlen(reset_content_style_tag);
 
     if (buffer == NULL || buffer->str.data == NULL
-        || buffer_row >= buffer_text_height(buffer) || buf_len == 0) {
+        || buffer_row >= buffer_text_visible_height(buffer) || buf_len == 0) {
         return -1;
     }
 
-    size_t content_width = buffer_text_width(buffer);
+    size_t content_width = buffer_text_visible_width(buffer);
     if ((buf_len - 1) < content_width)
         return -1;
 

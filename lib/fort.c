@@ -93,7 +93,18 @@ enum F_BOOL {
 enum str_buf_type {
     CHAR_BUF,
 #ifdef FT_HAVE_WCHAR
-    W_CHAR_BUF
+    W_CHAR_BUF,
+#endif /* FT_HAVE_WCHAR */
+//#ifdef FT_HAVE_UTF8
+//    UTF8_BUF,
+//#endif /* FT_HAVE_WCHAR */
+};
+
+enum table_char_type {
+    FT_UNDEF_CHAR,
+    FT_CHAR,
+#ifdef FT_HAVE_WCHAR
+    FT_W_CHAR
 #endif /* FT_HAVE_WCHAR */
 };
 
@@ -348,7 +359,7 @@ fort_status_t fill_buffer_from_wstring(string_buffer_t *buffer, const wchar_t *s
 #endif /* FT_HAVE_WCHAR */
 
 FT_INTERNAL
-size_t buffer_text_height(const string_buffer_t *buffer);
+size_t buffer_text_visible_height(const string_buffer_t *buffer);
 
 FT_INTERNAL
 size_t string_buffer_capacity(const string_buffer_t *buffer);
@@ -357,7 +368,7 @@ FT_INTERNAL
 void *buffer_get_data(string_buffer_t *buffer);
 
 FT_INTERNAL
-size_t buffer_text_width(const string_buffer_t *buffer);
+size_t buffer_text_visible_width(const string_buffer_t *buffer);
 
 FT_INTERNAL
 int buffer_printf(string_buffer_t *buffer, size_t buffer_row, char *buf, size_t total_buf_len,
@@ -614,10 +625,10 @@ FT_INTERNAL
 fort_cell_t *copy_cell(fort_cell_t *cell);
 
 FT_INTERNAL
-size_t hint_width_cell(const fort_cell_t *cell, const context_t *context, enum request_geom_type geom);
+size_t hint_cell_width(const fort_cell_t *cell, const context_t *context, enum request_geom_type geom);
 
 FT_INTERNAL
-size_t hint_height_cell(const fort_cell_t *cell, const context_t *context);
+size_t hint_cell_visible_height(const fort_cell_t *cell, const context_t *context);
 
 FT_INTERNAL
 void set_cell_type(fort_cell_t *cell, enum CellType type);
@@ -758,7 +769,7 @@ struct ft_table {
     size_t cur_row;
     size_t cur_col;
     vector_t *separators;
-    enum str_buf_type char_type;
+    enum table_char_type char_type;
 };
 
 FT_INTERNAL
@@ -873,7 +884,7 @@ enum CellType get_cell_type(const fort_cell_t *cell)
 }
 
 FT_INTERNAL
-size_t hint_width_cell(const fort_cell_t *cell, const context_t *context, enum request_geom_type geom)
+size_t hint_cell_width(const fort_cell_t *cell, const context_t *context, enum request_geom_type geom)
 {
     /* todo:
      * At the moment min width includes paddings. Maybe it is better that min width weren't include
@@ -886,7 +897,7 @@ size_t hint_width_cell(const fort_cell_t *cell, const context_t *context, enum r
     size_t cell_padding_right = get_cell_property_value_hierarcial(context->table_properties, context->row, context->column, FT_CPROP_RIGHT_PADDING);
     size_t result = cell_padding_left + cell_padding_right;
     if (cell->str_buffer && cell->str_buffer->str.data) {
-        result += buffer_text_width(cell->str_buffer);
+        result += buffer_text_visible_width(cell->str_buffer);
     }
     result = MAX(result, (size_t)get_cell_property_value_hierarcial(context->table_properties, context->row, context->column, FT_CPROP_MIN_WIDTH));
 
@@ -912,7 +923,7 @@ size_t hint_width_cell(const fort_cell_t *cell, const context_t *context, enum r
 }
 
 FT_INTERNAL
-size_t hint_height_cell(const fort_cell_t *cell, const context_t *context)
+size_t hint_cell_visible_height(const fort_cell_t *cell, const context_t *context)
 {
     assert(cell);
     assert(context);
@@ -921,7 +932,7 @@ size_t hint_height_cell(const fort_cell_t *cell, const context_t *context)
     size_t cell_empty_string_height = get_cell_property_value_hierarcial(context->table_properties, context->row, context->column, FT_CPROP_EMPTY_STR_HEIGHT);
     size_t result = cell_padding_top + cell_padding_bottom;
     if (cell->str_buffer && cell->str_buffer->str.data) {
-        size_t text_height = buffer_text_height(cell->str_buffer);
+        size_t text_height = buffer_text_visible_height(cell->str_buffer);
         result += text_height == 0 ? cell_empty_string_height : text_height;
     }
     return result;
@@ -936,7 +947,7 @@ int cell_printf(fort_cell_t *cell, size_t row, char *buf, size_t buf_len, const 
     int (*snprint_n_strings_)(char *, size_t, size_t, const char *) = snprint_n_strings;
 
     if (cell == NULL || buf_len == 0
-        || (buf_len <= hint_width_cell(cell, context, VISIBLE_GEOMETRY))) {
+        || (buf_len <= hint_cell_width(cell, context, VISIBLE_GEOMETRY))) {
         return -1;
     }
 
@@ -986,9 +997,9 @@ int cell_printf(fort_cell_t *cell, size_t row, char *buf, size_t buf_len, const 
 #define WRITE_CONTENT_STYLE_TAG        CHCK_RSLT_ADD_TO_INVISIBLE_WRITTEN(snprint_n_strings_(buf + TOTAL_WRITTEN, buf_len - TOTAL_WRITTEN, 1, content_style_tag))
 #define WRITE_RESET_CONTENT_STYLE_TAG  CHCK_RSLT_ADD_TO_INVISIBLE_WRITTEN(snprint_n_strings_(buf + TOTAL_WRITTEN, buf_len - TOTAL_WRITTEN, 1, reset_content_style_tag))
 
-    if (row >= hint_height_cell(cell, context)
+    if (row >= hint_cell_visible_height(cell, context)
         || row < cell_padding_top
-        || row >= (cell_padding_top + buffer_text_height(cell->str_buffer))) {
+        || row >= (cell_padding_top + buffer_text_visible_height(cell->str_buffer))) {
         WRITE_CELL_STYLE_TAG;
         WRITE_CONTENT_STYLE_TAG;
         WRITE_RESET_CONTENT_STYLE_TAG;
@@ -1030,7 +1041,7 @@ int cell_wprintf(fort_cell_t *cell, size_t row, wchar_t *buf, size_t buf_len, co
     int (*snprint_n_strings_)(wchar_t *, size_t, size_t, const char *) = wsnprint_n_string;
 
     if (cell == NULL || buf_len == 0
-        || (buf_len <= hint_width_cell(cell, context, VISIBLE_GEOMETRY))) {
+        || (buf_len <= hint_cell_width(cell, context, VISIBLE_GEOMETRY))) {
         return -1;
     }
 
@@ -1080,9 +1091,9 @@ int cell_wprintf(fort_cell_t *cell, size_t row, wchar_t *buf, size_t buf_len, co
 #define WRITE_CONTENT_STYLE_TAG        CHCK_RSLT_ADD_TO_INVISIBLE_WRITTEN(snprint_n_strings_(buf + TOTAL_WRITTEN, buf_len - TOTAL_WRITTEN, 1, content_style_tag))
 #define WRITE_RESET_CONTENT_STYLE_TAG  CHCK_RSLT_ADD_TO_INVISIBLE_WRITTEN(snprint_n_strings_(buf + TOTAL_WRITTEN, buf_len - TOTAL_WRITTEN, 1, reset_content_style_tag))
 
-    if (row >= hint_height_cell(cell, context)
+    if (row >= hint_cell_visible_height(cell, context)
         || row < cell_padding_top
-        || row >= (cell_padding_top + buffer_text_height(cell->str_buffer))) {
+        || row >= (cell_padding_top + buffer_text_visible_height(cell->str_buffer))) {
         WRITE_CELL_STYLE_TAG;
         WRITE_CONTENT_STYLE_TAG;
         WRITE_RESET_CONTENT_STYLE_TAG;
@@ -1219,6 +1230,7 @@ ft_table_t *ft_create_table(void)
     result->conv_buffer = NULL;
     result->cur_row = 0;
     result->cur_col = 0;
+    result->char_type = FT_UNDEF_CHAR;
     return result;
 }
 
@@ -1292,6 +1304,7 @@ ft_table_t *ft_copy_table(ft_table_t *table)
 
     result->cur_row = table->cur_row;
     result->cur_col = table->cur_col;
+    result->char_type = table->char_type;
     return result;
 }
 
@@ -2180,6 +2193,9 @@ int ft_set_cell_span(ft_table_t *table, size_t row, size_t col, size_t hor_span)
 #ifdef FT_HAVE_WCHAR
 #include <wchar.h>
 #endif
+#if defined(FT_HAVE_UTF8)
+#include "utf8.h"
+#endif
 
 
 char g_col_separator = FORT_DEFAULT_COL_SEPARATOR;
@@ -2337,6 +2353,24 @@ size_t number_of_columns_in_format_wstring(const wchar_t *fmt)
     const wchar_t *pos = fmt;
     while (1) {
         pos = wcschr(pos, g_col_separator);
+        if (pos == NULL)
+            break;
+
+        separator_counter++;
+        ++pos;
+    }
+    return separator_counter + 1;
+}
+#endif
+
+#if defined(FT_HAVE_UTF8)
+FT_INTERNAL
+size_t number_of_columns_in_format_u8string(const void *fmt)
+{
+    size_t separator_counter = 0;
+    const char *pos = fmt;
+    while (1) {
+        pos = utf8chr(pos, g_col_separator);
         if (pos == NULL)
             break;
 
@@ -4660,8 +4694,12 @@ clear:
 /* #include "wcwidth.h" */ /* Commented by amalgamation script */
 #include <assert.h>
 #include <stddef.h>
+#ifdef FT_HAVE_WCHAR
 #include <wchar.h>
-
+#endif
+#if defined(FT_HAVE_UTF8)
+#include "utf8.h"
+#endif
 
 static ptrdiff_t str_iter_width(const char *beg, const char *end)
 {
@@ -4706,7 +4744,7 @@ size_t strchr_count(const char *str, char ch)
     return count;
 }
 
-
+#ifdef FT_HAVE_WCHAR
 FT_INTERNAL
 size_t wstrchr_count(const wchar_t *str, wchar_t ch)
 {
@@ -4722,6 +4760,36 @@ size_t wstrchr_count(const wchar_t *str, wchar_t ch)
     }
     return count;
 }
+#endif
+
+
+// todo: do something with code below!!!!!!!!!!!!1
+
+
+#if defined(FT_HAVE_UTF8)
+FT_INTERNAL
+void *ut8next(const void *str)
+{
+    utf8_int32_t out_codepoint;
+    return utf8codepoint(str, &out_codepoint);
+}
+
+FT_INTERNAL
+size_t utf8chr_count(const void *str, utf8_int32_t ch)
+{
+    if (str == NULL)
+        return 0;
+
+    size_t count = 0;
+    str = utf8chr(str, ch);
+    while (str) {
+        count++;
+        str = ut8next(str);
+        str = utf8chr(str, ch);
+    }
+    return count;
+}
+#endif
 
 
 FT_INTERNAL
@@ -4768,6 +4836,29 @@ const wchar_t *wstr_n_substring_beg(const wchar_t *str, wchar_t ch_separator, si
     return str ? (str + 1) : NULL;
 }
 #endif /* FT_HAVE_WCHAR */
+
+#if defined(FT_HAVE_UTF8)
+FT_INTERNAL
+const void *utf8_n_substring_beg(const void *str, utf8_int32_t ch_separator, size_t n)
+{
+    if (str == NULL)
+        return NULL;
+
+    if (n == 0)
+        return str;
+
+    str = utf8chr(str, ch_separator);
+    --n;
+    while (n > 0) {
+        if (str == NULL)
+            return NULL;
+        --n;
+        str = ut8next(str);
+        str = utf8chr(str, ch_separator);
+    }
+    return str ? (ut8next(str)) : NULL;
+}
+#endif
 
 
 FT_INTERNAL
@@ -4934,7 +5025,7 @@ fort_status_t fill_buffer_from_wstring(string_buffer_t *buffer, const wchar_t *s
 
 
 FT_INTERNAL
-size_t buffer_text_height(const string_buffer_t *buffer)
+size_t buffer_text_visible_height(const string_buffer_t *buffer)
 {
     if (buffer == NULL || buffer->str.data == NULL || buf_str_len(buffer) == 0) {
         return 0;
@@ -4947,7 +5038,7 @@ size_t buffer_text_height(const string_buffer_t *buffer)
 
 
 FT_INTERNAL
-size_t buffer_text_width(const string_buffer_t *buffer)
+size_t buffer_text_visible_width(const string_buffer_t *buffer)
 {
     size_t max_length = 0;
     if (buffer->type == CHAR_BUF) {
@@ -5004,11 +5095,11 @@ int buffer_printf(string_buffer_t *buffer, size_t buffer_row, char *buf, size_t 
     size_t buf_len = total_buf_len - strlen(content_style_tag) - strlen(reset_content_style_tag);
 
     if (buffer == NULL || buffer->str.data == NULL
-        || buffer_row >= buffer_text_height(buffer) || buf_len == 0) {
+        || buffer_row >= buffer_text_visible_height(buffer) || buf_len == 0) {
         return -1;
     }
 
-    size_t content_width = buffer_text_width(buffer);
+    size_t content_width = buffer_text_visible_width(buffer);
     if ((buf_len - 1) < content_width)
         return -1;
 
@@ -5101,11 +5192,11 @@ int buffer_wprintf(string_buffer_t *buffer, size_t buffer_row, wchar_t *buf, siz
     size_t buf_len = total_buf_len - strlen(content_style_tag) - strlen(reset_content_style_tag);
 
     if (buffer == NULL || buffer->str.data == NULL
-        || buffer_row >= buffer_text_height(buffer) || buf_len == 0) {
+        || buffer_row >= buffer_text_visible_height(buffer) || buf_len == 0) {
         return -1;
     }
 
-    size_t content_width = buffer_text_width(buffer);
+    size_t content_width = buffer_text_visible_width(buffer);
     if ((buf_len - 1) < content_width)
         return -1;
 
@@ -5379,7 +5470,7 @@ fort_status_t table_rows_and_cols_geometry(const ft_table_t *table,
             if (cell) {
                 switch (get_cell_type(cell)) {
                     case CommonCell:
-                        col_width_arr[col] = MAX(col_width_arr[col], hint_width_cell(cell, &context, geom));
+                        col_width_arr[col] = MAX(col_width_arr[col], hint_cell_width(cell, &context, geom));
                         break;
                     case GroupMasterCell:
                         combined_cells_found = 1;
@@ -5388,7 +5479,7 @@ fort_status_t table_rows_and_cols_geometry(const ft_table_t *table,
                         ; /* Do nothing */
                         break;
                 }
-                row_height_arr[row] = MAX(row_height_arr[row], hint_height_cell(cell, &context));
+                row_height_arr[row] = MAX(row_height_arr[row], hint_cell_visible_height(cell, &context));
             } else {
                 size_t cell_empty_string_height = get_cell_property_value_hierarcial(context.table_properties, context.row, context.column, FT_CPROP_EMPTY_STR_HEIGHT);
                 if (cell_empty_string_height) {
@@ -5410,7 +5501,7 @@ fort_status_t table_rows_and_cols_geometry(const ft_table_t *table,
                 context.row = row;
                 if (cell) {
                     if (get_cell_type(cell) == GroupMasterCell) {
-                        size_t hint_width = hint_width_cell(cell, &context, geom);
+                        size_t hint_width = hint_cell_width(cell, &context, geom);
                         size_t slave_col = col + group_cell_number(row_p, col);
                         size_t cur_adj_col = col;
                         size_t group_width = col_width_arr[col];

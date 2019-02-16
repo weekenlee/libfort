@@ -62,6 +62,7 @@ ft_table_t *ft_create_table(void)
     result->conv_buffer = NULL;
     result->cur_row = 0;
     result->cur_col = 0;
+    result->char_type = FT_UNDEF_CHAR;
     return result;
 }
 
@@ -135,6 +136,7 @@ ft_table_t *ft_copy_table(ft_table_t *table)
 
     result->cur_row = table->cur_row;
     result->cur_col = table->cur_col;
+    result->char_type = table->char_type;
     return result;
 }
 

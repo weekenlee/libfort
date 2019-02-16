@@ -65,7 +65,7 @@ enum CellType get_cell_type(const fort_cell_t *cell)
 }
 
 FT_INTERNAL
-size_t hint_width_cell(const fort_cell_t *cell, const context_t *context, enum request_geom_type geom)
+size_t hint_cell_width(const fort_cell_t *cell, const context_t *context, enum request_geom_type geom)
 {
     /* todo:
      * At the moment min width includes paddings. Maybe it is better that min width weren't include
@@ -78,7 +78,7 @@ size_t hint_width_cell(const fort_cell_t *cell, const context_t *context, enum r
     size_t cell_padding_right = get_cell_property_value_hierarcial(context->table_properties, context->row, context->column, FT_CPROP_RIGHT_PADDING);
     size_t result = cell_padding_left + cell_padding_right;
     if (cell->str_buffer && cell->str_buffer->str.data) {
-        result += buffer_text_width(cell->str_buffer);
+        result += buffer_text_visible_width(cell->str_buffer);
     }
     result = MAX(result, (size_t)get_cell_property_value_hierarcial(context->table_properties, context->row, context->column, FT_CPROP_MIN_WIDTH));
 
@@ -104,7 +104,7 @@ size_t hint_width_cell(const fort_cell_t *cell, const context_t *context, enum r
 }
 
 FT_INTERNAL
-size_t hint_height_cell(const fort_cell_t *cell, const context_t *context)
+size_t hint_cell_visible_height(const fort_cell_t *cell, const context_t *context)
 {
     assert(cell);
     assert(context);
@@ -113,7 +113,7 @@ size_t hint_height_cell(const fort_cell_t *cell, const context_t *context)
     size_t cell_empty_string_height = get_cell_property_value_hierarcial(context->table_properties, context->row, context->column, FT_CPROP_EMPTY_STR_HEIGHT);
     size_t result = cell_padding_top + cell_padding_bottom;
     if (cell->str_buffer && cell->str_buffer->str.data) {
-        size_t text_height = buffer_text_height(cell->str_buffer);
+        size_t text_height = buffer_text_visible_height(cell->str_buffer);
         result += text_height == 0 ? cell_empty_string_height : text_height;
     }
     return result;
@@ -128,7 +128,7 @@ int cell_printf(fort_cell_t *cell, size_t row, char *buf, size_t buf_len, const 
     int (*snprint_n_strings_)(char *, size_t, size_t, const char *) = snprint_n_strings;
 
     if (cell == NULL || buf_len == 0
-        || (buf_len <= hint_width_cell(cell, context, VISIBLE_GEOMETRY))) {
+        || (buf_len <= hint_cell_width(cell, context, VISIBLE_GEOMETRY))) {
         return -1;
     }
 
@@ -178,9 +178,9 @@ int cell_printf(fort_cell_t *cell, size_t row, char *buf, size_t buf_len, const 
 #define WRITE_CONTENT_STYLE_TAG        CHCK_RSLT_ADD_TO_INVISIBLE_WRITTEN(snprint_n_strings_(buf + TOTAL_WRITTEN, buf_len - TOTAL_WRITTEN, 1, content_style_tag))
 #define WRITE_RESET_CONTENT_STYLE_TAG  CHCK_RSLT_ADD_TO_INVISIBLE_WRITTEN(snprint_n_strings_(buf + TOTAL_WRITTEN, buf_len - TOTAL_WRITTEN, 1, reset_content_style_tag))
 
-    if (row >= hint_height_cell(cell, context)
+    if (row >= hint_cell_visible_height(cell, context)
         || row < cell_padding_top
-        || row >= (cell_padding_top + buffer_text_height(cell->str_buffer))) {
+        || row >= (cell_padding_top + buffer_text_visible_height(cell->str_buffer))) {
         WRITE_CELL_STYLE_TAG;
         WRITE_CONTENT_STYLE_TAG;
         WRITE_RESET_CONTENT_STYLE_TAG;
@@ -222,7 +222,7 @@ int cell_wprintf(fort_cell_t *cell, size_t row, wchar_t *buf, size_t buf_len, co
     int (*snprint_n_strings_)(wchar_t *, size_t, size_t, const char *) = wsnprint_n_string;
 
     if (cell == NULL || buf_len == 0
-        || (buf_len <= hint_width_cell(cell, context, VISIBLE_GEOMETRY))) {
+        || (buf_len <= hint_cell_width(cell, context, VISIBLE_GEOMETRY))) {
         return -1;
     }
 
@@ -272,9 +272,9 @@ int cell_wprintf(fort_cell_t *cell, size_t row, wchar_t *buf, size_t buf_len, co
 #define WRITE_CONTENT_STYLE_TAG        CHCK_RSLT_ADD_TO_INVISIBLE_WRITTEN(snprint_n_strings_(buf + TOTAL_WRITTEN, buf_len - TOTAL_WRITTEN, 1, content_style_tag))
 #define WRITE_RESET_CONTENT_STYLE_TAG  CHCK_RSLT_ADD_TO_INVISIBLE_WRITTEN(snprint_n_strings_(buf + TOTAL_WRITTEN, buf_len - TOTAL_WRITTEN, 1, reset_content_style_tag))
 
-    if (row >= hint_height_cell(cell, context)
+    if (row >= hint_cell_visible_height(cell, context)
         || row < cell_padding_top
-        || row >= (cell_padding_top + buffer_text_height(cell->str_buffer))) {
+        || row >= (cell_padding_top + buffer_text_visible_height(cell->str_buffer))) {
         WRITE_CELL_STYLE_TAG;
         WRITE_CONTENT_STYLE_TAG;
         WRITE_RESET_CONTENT_STYLE_TAG;

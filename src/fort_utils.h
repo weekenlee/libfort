@@ -56,7 +56,18 @@ enum F_BOOL {
 enum str_buf_type {
     CHAR_BUF,
 #ifdef FT_HAVE_WCHAR
-    W_CHAR_BUF
+    W_CHAR_BUF,
+#endif /* FT_HAVE_WCHAR */
+//#ifdef FT_HAVE_UTF8
+//    UTF8_BUF,
+//#endif /* FT_HAVE_WCHAR */
+};
+
+enum table_char_type {
+    FT_UNDEF_CHAR,
+    FT_CHAR,
+#ifdef FT_HAVE_WCHAR
+    FT_W_CHAR
 #endif /* FT_HAVE_WCHAR */
 };
 

@@ -53,6 +53,10 @@ SOFTWARE.
 #define FT_HAVE_WCHAR
 #endif
 
+#define FT_CONGIG_HAVE_UTF8
+#if defined(FT_CONGIG_HAVE_UTF8)
+#define FT_HAVE_UTF8
+#endif
 
 /*****************************************************************************
  *               RETURN CODES

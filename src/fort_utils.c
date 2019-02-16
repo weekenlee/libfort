@@ -2,6 +2,9 @@
 #ifdef FT_HAVE_WCHAR
 #include <wchar.h>
 #endif
+#if defined(FT_HAVE_UTF8)
+#include "utf8.h"
+#endif
 
 
 char g_col_separator = FORT_DEFAULT_COL_SEPARATOR;
@@ -159,6 +162,24 @@ size_t number_of_columns_in_format_wstring(const wchar_t *fmt)
     const wchar_t *pos = fmt;
     while (1) {
         pos = wcschr(pos, g_col_separator);
+        if (pos == NULL)
+            break;
+
+        separator_counter++;
+        ++pos;
+    }
+    return separator_counter + 1;
+}
+#endif
+
+#if defined(FT_HAVE_UTF8)
+FT_INTERNAL
+size_t number_of_columns_in_format_u8string(const void *fmt)
+{
+    size_t separator_counter = 0;
+    const char *pos = fmt;
+    while (1) {
+        pos = utf8chr(pos, g_col_separator);
         if (pos == NULL)
             break;
 

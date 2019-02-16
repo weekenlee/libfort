@@ -170,7 +170,7 @@ fort_status_t table_rows_and_cols_geometry(const ft_table_t *table,
             if (cell) {
                 switch (get_cell_type(cell)) {
                     case CommonCell:
-                        col_width_arr[col] = MAX(col_width_arr[col], hint_width_cell(cell, &context, geom));
+                        col_width_arr[col] = MAX(col_width_arr[col], hint_cell_width(cell, &context, geom));
                         break;
                     case GroupMasterCell:
                         combined_cells_found = 1;
@@ -179,7 +179,7 @@ fort_status_t table_rows_and_cols_geometry(const ft_table_t *table,
                         ; /* Do nothing */
                         break;
                 }
-                row_height_arr[row] = MAX(row_height_arr[row], hint_height_cell(cell, &context));
+                row_height_arr[row] = MAX(row_height_arr[row], hint_cell_visible_height(cell, &context));
             } else {
                 size_t cell_empty_string_height = get_cell_property_value_hierarcial(context.table_properties, context.row, context.column, FT_CPROP_EMPTY_STR_HEIGHT);
                 if (cell_empty_string_height) {
@@ -201,7 +201,7 @@ fort_status_t table_rows_and_cols_geometry(const ft_table_t *table,
                 context.row = row;
                 if (cell) {
                     if (get_cell_type(cell) == GroupMasterCell) {
-                        size_t hint_width = hint_width_cell(cell, &context, geom);
+                        size_t hint_width = hint_cell_width(cell, &context, geom);
                         size_t slave_col = col + group_cell_number(row_p, col);
                         size_t cur_adj_col = col;
                         size_t group_width = col_width_arr[col];
