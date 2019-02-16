@@ -83,7 +83,7 @@ void *ut8next(const void *str)
     return utf8codepoint(str, &out_codepoint);
 }
 
-FT_INTERNAL
+//FT_INTERNAL
 size_t utf8chr_count(const void *str, utf8_int32_t ch)
 {
     if (str == NULL)
@@ -147,7 +147,7 @@ const wchar_t *wstr_n_substring_beg(const wchar_t *str, wchar_t ch_separator, si
 #endif /* FT_HAVE_WCHAR */
 
 #if defined(FT_HAVE_UTF8)
-FT_INTERNAL
+//FT_INTERNAL
 const void *utf8_n_substring_beg(const void *str, utf8_int32_t ch_separator, size_t n)
 {
     if (str == NULL)
@@ -214,7 +214,7 @@ void wstr_n_substring(const wchar_t *str, wchar_t ch_separator, size_t n, const 
 #endif /* FT_HAVE_WCHAR */
 
 #if defined(FT_HAVE_UTF8)
-FT_INTERNAL
+//FT_INTERNAL
 void utf8_n_substring(const void *str, utf8_int32_t ch_separator, size_t n, const void **begin, const void **end)
 {
     const char *beg = utf8_n_substring_beg(str, ch_separator, n);

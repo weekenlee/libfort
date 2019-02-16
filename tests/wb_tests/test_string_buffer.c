@@ -226,7 +226,14 @@ void test_str_n_substring(void)
     assert_true(wbeg == NULL && wend == NULL);
 #endif
 #ifdef FT_HAVE_UTF8
-
+    const char *utf8_beg = NULL;
+    const char *utf8_end = NULL;
+    str_n_substring(utf8_empty_str, '\n', 0, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_empty_str && utf8_end == utf8_empty_str + strlen(utf8_empty_str));
+    str_n_substring(utf8_empty_str, '\n', 1, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == NULL && utf8_end == NULL);
+    str_n_substring(utf8_empty_str, '\n', 2, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == NULL && utf8_end == NULL);
 #endif
 
 
