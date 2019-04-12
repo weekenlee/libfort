@@ -72,6 +72,8 @@ extern char g_col_separator;
 #define F_REALLOC fort_realloc
 #define F_STRDUP fort_strdup
 #define F_WCSDUP fort_wcsdup
+/* @todo: replace with custom impl !!!*/
+#define F_UTF8DUP utf8dup
 
 #define F_CREATE(type) ((type *)F_CALLOC(sizeof(type), 1))
 
@@ -95,9 +97,9 @@ enum str_buf_type {
 #ifdef FT_HAVE_WCHAR
     W_CHAR_BUF,
 #endif /* FT_HAVE_WCHAR */
-//#ifdef FT_HAVE_UTF8
-//    UTF8_BUF,
-//#endif /* FT_HAVE_WCHAR */
+#ifdef FT_HAVE_UTF8
+    UTF8_BUF,
+#endif /* FT_HAVE_WCHAR */
 };
 
 enum table_char_type {
@@ -1631,7 +1633,12 @@ utf8_int32_t utf8uprcodepoint(utf8_int32_t cp)
 struct string_buffer {
     union {
         char *cstr;
+#ifdef FT_HAVE_WCHAR
         wchar_t *wstr;
+#endif
+#ifdef FT_HAVE_UTF8
+        void *u8str;
+#endif
         void *data;
     } str;
     size_t data_sz;
@@ -1657,12 +1664,17 @@ fort_status_t fill_buffer_from_string(string_buffer_t *buffer, const char *str);
 FT_INTERNAL
 fort_status_t fill_buffer_from_wstring(string_buffer_t *buffer, const wchar_t *str);
 #endif /* FT_HAVE_WCHAR */
+#ifdef FT_HAVE_UTF8
+//FT_INTERNAL
+fort_status_t fill_buffer_from_u8string(string_buffer_t *buffer, const void *str);
+#endif /* FT_HAVE_UTF8 */
+
 
 FT_INTERNAL
 size_t buffer_text_visible_height(const string_buffer_t *buffer);
 
 FT_INTERNAL
-size_t string_buffer_capacity(const string_buffer_t *buffer);
+size_t string_buffer_width_capacity(const string_buffer_t *buffer);
 
 FT_INTERNAL
 void *buffer_get_data(string_buffer_t *buffer);
@@ -1679,6 +1691,11 @@ FT_INTERNAL
 int buffer_wprintf(string_buffer_t *buffer, size_t buffer_row, wchar_t *buf, size_t total_buf_len,
                    const context_t *context, const char *content_style_tag, const char *reset_content_style_tag);
 #endif /* FT_HAVE_WCHAR */
+#ifdef FT_HAVE_UTF8
+//FT_INTERNAL
+//int buffer_u8printf(string_buffer_t *buffer, size_t buffer_row, void *buf, size_t total_buf_len,
+//                   const context_t *context, const char *content_style_tag, const char *reset_content_style_tag) __attribute__((unused));
+#endif /* FT_HAVE_UTF8 */
 
 #endif /* STRING_BUFFER_H */
 
@@ -3080,7 +3097,7 @@ const char *ft_to_string(const ft_table_t *table)
         if (table->conv_buffer == NULL)
             return NULL;
     }
-    while (string_buffer_capacity(table->conv_buffer) < sz) {
+    while (string_buffer_width_capacity(table->conv_buffer) < sz) {
         if (FT_IS_ERROR(realloc_string_buffer_without_copy(table->conv_buffer))) {
             return NULL;
         }
@@ -3182,7 +3199,7 @@ const wchar_t *ft_to_wstring(const ft_table_t *table)
         if (table->conv_buffer == NULL)
             return NULL;
     }
-    while (string_buffer_capacity(table->conv_buffer) < sz) {
+    while (string_buffer_width_capacity(table->conv_buffer) < sz) {
         if (FT_IS_ERROR(realloc_string_buffer_without_copy(table->conv_buffer))) {
             return NULL;
         }
@@ -3712,8 +3729,6 @@ int snprint_n_strings(char *buf, size_t length, size_t n, const char *str)
     return (int)(n * str_len);
 }
 
-
-
 #if defined(FT_HAVE_WCHAR)
 #define WCS_SIZE 64
 
@@ -3779,6 +3794,35 @@ int wsnprint_n_string(wchar_t *buf, size_t length, size_t n, const char *str)
             *(buf++) = (wchar_t) * (str_p++);
     }
     return (int)(n * str_len);
+}
+#endif
+
+
+#if defined(FT_HAVE_UTF8)
+//FT_INTERNAL
+int u8nprint_n_strings(void *buf, size_t length, size_t n, const void *str)
+{
+    size_t str_size = utf8size(str) - 1; /* str_size - raw size in bytes, excluding \0 */
+    if (length <= n * str_size)
+        return -1;
+
+    if (n == 0)
+        return 0;
+
+    /* To ensure valid return value it is safely not print such big strings */
+    if (n * str_size > INT_MAX)
+        return -1;
+
+    if (str_size == 0)
+        return 0;
+
+    while (n) {
+        memcpy(buf, str, str_size);
+        buf = (char *)buf + str_size;
+        --n;
+    }
+    *(char *)buf = '\0';
+    return (int)(n * str_size);
 }
 #endif
 
@@ -5649,14 +5693,14 @@ fort_row_t *create_row_from_fmt_string(const char  *fmt, va_list *va_args)
     while (1) {
         va_list va;
         va_copy(va, *va_args);
-        int virtual_sz = VSNPRINTF(buffer->str.STR_FILED, string_buffer_capacity(buffer), fmt, va);
+        int virtual_sz = VSNPRINTF(buffer->str.STR_FILED, string_buffer_width_capacity(buffer), fmt, va);
         va_end(va);
         /* If error encountered */
         if (virtual_sz < 0)
             goto clear;
 
         /* Successful write */
-        if ((size_t)virtual_sz < string_buffer_capacity(buffer))
+        if ((size_t)virtual_sz < string_buffer_width_capacity(buffer))
             break;
 
         /* Otherwise buffer was too small, so incr. buffer size ant try again. */
@@ -5735,14 +5779,14 @@ fort_row_t *create_row_from_fmt_wstring(const wchar_t  *fmt, va_list *va_args)
     while (1) {
         va_list va;
         va_copy(va, *va_args);
-        int virtual_sz = VSNPRINTF(buffer->str.STR_FILED, string_buffer_capacity(buffer), fmt, va);
+        int virtual_sz = VSNPRINTF(buffer->str.STR_FILED, string_buffer_width_capacity(buffer), fmt, va);
         va_end(va);
         /* If error encountered */
         if (virtual_sz < 0)
             goto clear;
 
         /* Successful write */
-        if ((size_t)virtual_sz < string_buffer_capacity(buffer))
+        if ((size_t)virtual_sz < string_buffer_width_capacity(buffer))
             break;
 
         /* Otherwise buffer was too small, so incr. buffer size ant try again. */
@@ -6020,12 +6064,24 @@ static ptrdiff_t wcs_iter_width(const wchar_t *beg, const wchar_t *end)
 static size_t buf_str_len(const string_buffer_t *buf)
 {
     assert(buf);
-    if (buf->type == CHAR_BUF) {
-        return strlen(buf->str.cstr);
-    } else {
-        return wcslen(buf->str.wstr);
+
+    switch (buf->type) {
+        case CHAR_BUF:
+            return strlen(buf->str.cstr);
+#ifdef FT_HAVE_WCHAR
+        case W_CHAR_BUF:
+            return wcslen(buf->str.wstr);
+#endif
+#ifdef FT_HAVE_UTF8
+        case UTF8_BUF:
+            return utf8len(buf->str.u8str);
+#endif
     }
+
+    assert(0);
+    return 0;
 }
+
 
 
 FT_INTERNAL
@@ -6074,7 +6130,7 @@ void *ut8next(const void *str)
     return utf8codepoint(str, &out_codepoint);
 }
 
-//FT_INTERNAL
+FT_INTERNAL
 size_t utf8chr_count(const void *str, utf8_int32_t ch)
 {
     if (str == NULL)
@@ -6138,7 +6194,7 @@ const wchar_t *wstr_n_substring_beg(const wchar_t *str, wchar_t ch_separator, si
 #endif /* FT_HAVE_WCHAR */
 
 #if defined(FT_HAVE_UTF8)
-//FT_INTERNAL
+FT_INTERNAL
 const void *utf8_n_substring_beg(const void *str, utf8_int32_t ch_separator, size_t n)
 {
     if (str == NULL)
@@ -6205,7 +6261,7 @@ void wstr_n_substring(const wchar_t *str, wchar_t ch_separator, size_t n, const 
 #endif /* FT_HAVE_WCHAR */
 
 #if defined(FT_HAVE_UTF8)
-//FT_INTERNAL
+FT_INTERNAL
 void utf8_n_substring(const void *str, utf8_int32_t ch_separator, size_t n, const void **begin, const void **end)
 {
     const char *beg = utf8_n_substring_beg(str, ch_separator, n);
@@ -6231,7 +6287,24 @@ void utf8_n_substring(const void *str, utf8_int32_t ch_separator, size_t n, cons
 FT_INTERNAL
 string_buffer_t *create_string_buffer(size_t number_of_chars, enum str_buf_type type)
 {
-    size_t sz = (number_of_chars) * (type == CHAR_BUF ? sizeof(char) : sizeof(wchar_t));
+    size_t sz = 0;
+
+    switch (type) {
+        case CHAR_BUF:
+            sz = (number_of_chars) * sizeof(char);
+            break;
+#ifdef FT_HAVE_WCHAR
+        case W_CHAR_BUF:
+            sz = (number_of_chars) * sizeof(wchar_t);
+            break;
+#endif
+#ifdef FT_HAVE_UTF8
+        case UTF8_BUF:
+            sz = (number_of_chars) * 4;  // @todo: ahtung replace this 4 with something proper
+            break;
+#endif
+    }
+
     string_buffer_t *result = (string_buffer_t *)F_MALLOC(sizeof(string_buffer_t));
     if (result == NULL)
         return NULL;
@@ -6248,6 +6321,10 @@ string_buffer_t *create_string_buffer(size_t number_of_chars, enum str_buf_type 
 #ifdef FT_HAVE_WCHAR
     } else if (sz && type == W_CHAR_BUF) {
         result->str.wstr[0] = L'\0';
+#endif /* FT_HAVE_WCHAR */
+#ifdef FT_HAVE_UTF8
+    } else if (sz && type == UTF8_BUF) {
+        ((char*)result->str.u8str)[0] = '\0';
 #endif /* FT_HAVE_WCHAR */
     }
 
@@ -6346,6 +6423,25 @@ fort_status_t fill_buffer_from_wstring(string_buffer_t *buffer, const wchar_t *s
 }
 #endif /* FT_HAVE_WCHAR */
 
+#ifdef FT_HAVE_UTF8
+//FT_INTERNAL
+fort_status_t fill_buffer_from_u8string(string_buffer_t *buffer, const void *str)
+{
+    assert(buffer);
+    assert(str);
+
+    void *copy = F_UTF8DUP(str);
+    if (copy == NULL)
+        return FT_MEMORY_ERROR;
+
+    F_FREE(buffer->str.data);
+    buffer->str.u8str = copy;
+    buffer->type = UTF8_BUF;
+
+    return FT_SUCCESS;
+}
+#endif /* FT_HAVE_UTF8 */
+
 
 FT_INTERNAL
 size_t buffer_text_visible_height(const string_buffer_t *buffer)
@@ -6356,14 +6452,34 @@ size_t buffer_text_visible_height(const string_buffer_t *buffer)
     if (buffer->type == CHAR_BUF)
         return 1 + strchr_count(buffer->str.cstr, '\n');
 #ifdef FT_HAVE_WCHAR
-    else
+    else if (buffer->type == W_CHAR_BUF)
         return 1 + wstrchr_count(buffer->str.wstr, L'\n');
+#endif /* FT_HAVE_WCHAR */
+#ifdef FT_HAVE_UTF8
+    else if (buffer->type == UTF8_BUF)
+        return 1 + utf8chr_count(buffer->str.u8str, '\n');
 #endif /* FT_HAVE_WCHAR */
 
     assert(0);
     return 0;
 }
 
+#ifdef FT_HAVE_UTF8
+FT_INTERNAL
+size_t ut8_width(const void *beg, const void *end)
+{
+    size_t sz = (size_t)((const char *)end - (const char *)beg);
+    char *tmp = F_MALLOC(sizeof(char) * (sz + 1));
+    // @todo: add check to tmp
+    assert(tmp);
+
+    memcpy(tmp, beg, sz);
+    tmp[sz] = '\0';
+    size_t result = utf8len(tmp);
+    F_FREE(tmp);
+    return result;
+}
+#endif /* FT_HAVE_WCHAR */
 
 FT_INTERNAL
 size_t buffer_text_visible_width(const string_buffer_t *buffer)
@@ -6382,7 +6498,7 @@ size_t buffer_text_visible_width(const string_buffer_t *buffer)
             ++n;
         }
 #ifdef FT_HAVE_WCHAR
-    } else {
+    } else if (buffer->type == W_CHAR_BUF) {
         size_t n = 0;
         while (1) {
             const wchar_t *beg = NULL;
@@ -6396,6 +6512,20 @@ size_t buffer_text_visible_width(const string_buffer_t *buffer)
                 line_width = 0;
             max_length = MAX(max_length, (size_t)line_width);
 
+            ++n;
+        }
+#endif /* FT_HAVE_WCHAR */
+#ifdef FT_HAVE_UTF8
+    } else if (buffer->type == UTF8_BUF) {
+        size_t n = 0;
+        while (1) {
+            const void *beg = NULL;
+            const void *end = NULL;
+            utf8_n_substring(buffer->str.u8str, '\n', n, &beg, &end);
+            if (beg == NULL || end == NULL)
+                return max_length;
+
+            max_length = MAX(max_length, (size_t)ut8_width(beg, end));
             ++n;
         }
 #endif /* FT_HAVE_WCHAR */
@@ -6600,13 +6730,23 @@ clear:
 
 
 FT_INTERNAL
-size_t string_buffer_capacity(const string_buffer_t *buffer)
+size_t string_buffer_width_capacity(const string_buffer_t *buffer)
 {
     assert(buffer);
+
     if (buffer->type == CHAR_BUF)
         return buffer->data_sz;
-    else
+#ifdef FT_HAVE_WCHAR
+    else if (buffer->type == UTF8_BUF)
         return buffer->data_sz / sizeof(wchar_t);
+#endif /* FT_HAVE_WCHAR */
+#ifdef FT_HAVE_UTF8
+    else
+        return buffer->data_sz / 4;  /* todo: Maybe better implementation ?? */
+#endif /* FT_HAVE_WCHAR */
+
+    assert(0 && "Shouldn't be here");
+    return 0;
 }
 
 

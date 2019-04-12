@@ -796,14 +796,14 @@ fort_row_t *create_row_from_fmt_string(const char  *fmt, va_list *va_args)
     while (1) {
         va_list va;
         va_copy(va, *va_args);
-        int virtual_sz = VSNPRINTF(buffer->str.STR_FILED, string_buffer_capacity(buffer), fmt, va);
+        int virtual_sz = VSNPRINTF(buffer->str.STR_FILED, string_buffer_width_capacity(buffer), fmt, va);
         va_end(va);
         /* If error encountered */
         if (virtual_sz < 0)
             goto clear;
 
         /* Successful write */
-        if ((size_t)virtual_sz < string_buffer_capacity(buffer))
+        if ((size_t)virtual_sz < string_buffer_width_capacity(buffer))
             break;
 
         /* Otherwise buffer was too small, so incr. buffer size ant try again. */
@@ -882,14 +882,14 @@ fort_row_t *create_row_from_fmt_wstring(const wchar_t  *fmt, va_list *va_args)
     while (1) {
         va_list va;
         va_copy(va, *va_args);
-        int virtual_sz = VSNPRINTF(buffer->str.STR_FILED, string_buffer_capacity(buffer), fmt, va);
+        int virtual_sz = VSNPRINTF(buffer->str.STR_FILED, string_buffer_width_capacity(buffer), fmt, va);
         va_end(va);
         /* If error encountered */
         if (virtual_sz < 0)
             goto clear;
 
         /* Successful write */
-        if ((size_t)virtual_sz < string_buffer_capacity(buffer))
+        if ((size_t)virtual_sz < string_buffer_width_capacity(buffer))
             break;
 
         /* Otherwise buffer was too small, so incr. buffer size ant try again. */

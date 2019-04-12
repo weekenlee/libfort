@@ -16,9 +16,11 @@ const wchar_t *wstr_n_substring_beg(const wchar_t *str, wchar_t ch_separator, si
 const void *utf8_n_substring_beg(const void *str, utf8_int32_t ch_separator, size_t n);
 #endif
 
-fort_status_t str_n_substring(const char *str, char ch_separator, size_t n, const char **begin, const char **end);
+void str_n_substring(const char *str, char ch_separator, size_t n, const char **begin, const char **end);
 void wstr_n_substring(const wchar_t *str, wchar_t ch_separator, size_t n, const wchar_t **begin, const wchar_t **end);
-
+#ifdef FT_HAVE_UTF8
+void utf8_n_substring(const void *str, utf8_int32_t ch_separator, size_t n, const void **begin, const void **end);
+#endif
 
 //size_t buffer_text_visible_width(string_buffer_t *buffer);
 
@@ -226,13 +228,13 @@ void test_str_n_substring(void)
     assert_true(wbeg == NULL && wend == NULL);
 #endif
 #ifdef FT_HAVE_UTF8
-    const char *utf8_beg = NULL;
-    const char *utf8_end = NULL;
-    str_n_substring(utf8_empty_str, '\n', 0, &utf8_beg, &utf8_end);
+    const void *utf8_beg = NULL;
+    const void *utf8_end = NULL;
+    utf8_n_substring(utf8_empty_str, '\n', 0, &utf8_beg, &utf8_end);
     assert_true(utf8_beg == utf8_empty_str && utf8_end == utf8_empty_str + strlen(utf8_empty_str));
-    str_n_substring(utf8_empty_str, '\n', 1, &utf8_beg, &utf8_end);
+    utf8_n_substring(utf8_empty_str, '\n', 1, &utf8_beg, &utf8_end);
     assert_true(utf8_beg == NULL && utf8_end == NULL);
-    str_n_substring(utf8_empty_str, '\n', 2, &utf8_beg, &utf8_end);
+    utf8_n_substring(utf8_empty_str, '\n', 2, &utf8_beg, &utf8_end);
     assert_true(utf8_beg == NULL && utf8_end == NULL);
 #endif
 
@@ -252,6 +254,14 @@ void test_str_n_substring(void)
     wstr_n_substring(wstr, L'2', 0, &wbeg, &wend);
     assert_true(wbeg == wstr && wend == wstr + 1);
 #endif
+#ifdef FT_HAVE_UTF8
+    utf8_n_substring(NULL, '\n', 0, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == NULL && utf8_end == NULL);
+    utf8_n_substring(utf8_str, '\n', 0, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str && utf8_end == utf8_str + 3);
+    utf8_n_substring(utf8_str, '2', 0, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str && utf8_end == utf8_str + 1);
+#endif
 
     str_n_substring(str, '\n', 1, &beg, &end);
     assert_true(beg == str + 4 && end == str + 8);
@@ -267,6 +277,14 @@ void test_str_n_substring(void)
     assert_true(wbeg == wstr + 9 && wend == wstr + wcslen(wstr));
     wstr_n_substring(wstr, L'\n', 3, &wbeg, &wend);
     assert_true(wbeg == NULL && wend == NULL);
+#endif
+#ifdef FT_HAVE_UTF8
+    utf8_n_substring(utf8_str, '\n', 1, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str + 4 && utf8_end == utf8_str + 8);
+    utf8_n_substring(utf8_str, '\n', 2, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str + 9 && utf8_end == utf8_str + strlen(utf8_str));
+    utf8_n_substring(utf8_str, '\n', 3, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == NULL && end == NULL);
 #endif
 
     str_n_substring(str2, '\n', 0, &beg, &end);
@@ -299,6 +317,22 @@ void test_str_n_substring(void)
     assert_true(wbeg == wstr2 + 11 && wend == wstr2 + 11);
     wstr_n_substring(wstr2, L'\xff0f', 6, &wbeg, &wend);
     assert_true(wbeg == NULL && wend == NULL);
+#endif
+#if defined(FT_HAVE_WCHAR)
+    utf8_n_substring(utf8_str2, '\n', 0, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str2 && utf8_end == utf8_str2);
+    utf8_n_substring(utf8_str2, '\n', 1, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str2 + 1 && utf8_end == utf8_str2 + 4);
+    utf8_n_substring(utf8_str2, '\n', 2, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str2 + 5 && utf8_end == utf8_str2 + 7);
+    utf8_n_substring(utf8_str2, '\n', 3, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str2 + 8 && utf8_end == utf8_str2 + 8);
+    utf8_n_substring(utf8_str2, '\n', 4, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str2 + 9 && utf8_end == utf8_str2 + 10);
+    utf8_n_substring(utf8_str2, '\n', 5, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == utf8_str2 + 11 && utf8_end == utf8_str2 + 11);
+    utf8_n_substring(utf8_str2, '\n', 6, &utf8_beg, &utf8_end);
+    assert_true(utf8_beg == NULL && utf8_end == NULL);
 #endif
 }
 
@@ -346,6 +380,80 @@ void test_buffer_text_visible_width(void)
 
     buffer->str.wstr = (wchar_t *)L"12345\n1234567\n123";
     assert_true(buffer_text_visible_width(buffer) == 7);
+#endif
+
+#if defined(FT_HAVE_UTF8)
+    buffer->type = UTF8_BUF;
+
+    buffer->str.u8str = (void *)"";
+    assert_true(buffer_text_visible_width(buffer) == 0);
+
+    buffer->str.u8str = (void *)"\n\n\n\n";
+    assert_true(buffer_text_visible_width(buffer) == 0);
+
+    buffer->str.u8str = (void *)"12345";
+    assert_true(buffer_text_visible_width(buffer) == 5);
+
+    buffer->str.u8str = (void *)"12345\n1234567";
+    assert_true(buffer_text_visible_width(buffer) == 7);
+
+    buffer->str.u8str = (void *)"12345\n1234567\n";
+    assert_true(buffer_text_visible_width(buffer) == 7);
+
+    buffer->str.u8str = (void *)"12345\n1234567\n123";
+    assert_true(buffer_text_visible_width(buffer) == 7);
+
+
+    /* panagrams from http://clagnut.com/blog/2380/ */
+    /*                                   10        20        30        40        50        60        70        80        90       100       110 */
+    buffer->str.u8str = (void *)"Numbers  01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+    assert_true(buffer_text_visible_width(buffer) == 110);
+    buffer->str.u8str = (void *)"Chinese   視野無限廣, 窗外有藍天";
+    assert_true(buffer_text_visible_width(buffer) == 22);
+    buffer->str.u8str = (void *)"German    Falsches Üben von Xylophonmusik quält jeden größeren Zwerg";
+    assert_true(buffer_text_visible_width(buffer) == 68);
+    buffer->str.u8str = (void *)"Greek     Ταχίστη αλώπηξ βαφής ψημένη γη, δρασκελίζει υπέρ νωθρού κυνός Takhístè";
+    assert_true(buffer_text_visible_width(buffer) == 80);
+    buffer->str.u8str = (void *)"Irish     D’ḟuascail Íosa Úrṁac na hÓiġe Beannaiṫe pór Éaḃa agus Áḋaiṁ";
+    assert_true(buffer_text_visible_width(buffer) == 70);
+    buffer->str.u8str = (void *)"Japanese  いろはにほへと ちりぬるを わかよたれそ つねならむ うゐ";
+    assert_true(buffer_text_visible_width(buffer) == 39);
+    buffer->str.u8str = (void *)"Polish    Pójdźże, kiń tę chmurność w głąb flaszy";
+    assert_true(buffer_text_visible_width(buffer) == 49);
+    buffer->str.u8str = (void *)"Portuguese Luís argüia à Júlia que «brações, fé, chá, óxido, pôr, zângão» eram palavras do português";
+    assert_true(buffer_text_visible_width(buffer) == 100);
+    buffer->str.u8str = (void *)"Russian   Съешь же ещё этих мягких французских булок, да выпей чаю";
+    assert_true(buffer_text_visible_width(buffer) == 66);
+    buffer->str.u8str = (void *)"Spanish   Benjamín pidió una bebida de kiwi y fresa; Noé, sin vergüenza, la más exquisita champaña del menú";
+    assert_true(buffer_text_visible_width(buffer) == 107);
+    buffer->str.u8str = (void *)"Turkish   Vakfın çoğu bu huysuz genci plajda görmüştü";
+    assert_true(buffer_text_visible_width(buffer) == 53);
+
+    /*                                   10        20        30        40        50        60        70        80        90       100       110 */
+    buffer->str.u8str = (void *)"Numbers  01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+    assert_true(buffer_text_visible_width(buffer) == 110);
+    buffer->str.u8str = (void *)"Chinese   視野無限廣,\n 窗外有藍天";
+    assert_true(buffer_text_visible_width(buffer) == 16);
+    buffer->str.u8str = (void *)"German    Falsches Üben von Xy\nlophonmusik quält \njeden größeren Zwerg";
+    assert_true(buffer_text_visible_width(buffer) == 30);
+    buffer->str.u8str = (void *)"Greek     Ταχίστη αλώπηξ βαφής\n ψημένη γη, δρασκελίζει\n υπέρ νωθρού \nκυνός Takhístè";
+    assert_true(buffer_text_visible_width(buffer) == 30);
+    buffer->str.u8str = (void *)"Irish     D’ḟuascail Íosa Úrṁa\nc na hÓiġe Beannaiṫe\n pór Éaḃa agus Áḋaiṁ";
+    assert_true(buffer_text_visible_width(buffer) == 30);
+    buffer->str.u8str = (void *)"Japanese  いろはにほへと ちり\nぬるを わかよたれそ つねならむ うゐ";
+    assert_true(buffer_text_visible_width(buffer) == 20);
+    buffer->str.u8str = (void *)"Polish    Pójdźże, kiń tę chmu\nrność w głąb flaszy";
+    assert_true(buffer_text_visible_width(buffer) == 30);
+    buffer->str.u8str = (void *)"Portuguese Luís argüia à Júlia\n que «brações, fé, chá,\n óxido, pôr, \nzângão» eram palavras\n do português";
+    assert_true(buffer_text_visible_width(buffer) == 30);
+    buffer->str.u8str = (void *)"Russian   Съешь же ещё этих мя\nгких французских булок,\n да выпей чаю";
+    assert_true(buffer_text_visible_width(buffer) == 30);
+    buffer->str.u8str = (void *)"Spanish   Benjamín pidió una b\nebida de kiwi y fresa;\n Noé, sin vergüenza,\n la más exquisita\n champaña del menú";
+    assert_true(buffer_text_visible_width(buffer) == 30);
+    buffer->str.u8str = (void *)"Turkish   Vakfın çoğu bu huysu\nz genci plajda gö\nrmüştü";
+    assert_true(buffer_text_visible_width(buffer) == 30);
+
+
 #endif
 
     buffer->type = CHAR_BUF;
@@ -402,6 +510,29 @@ void test_buffer_text_visible_height(void)
     assert_true(buffer_text_visible_height(buffer) == 2);
 
     buffer->str.wstr = (wchar_t *)L"\n12345\n\n2";
+    assert_true(buffer_text_visible_height(buffer) == 4);
+#endif
+#if defined(FT_HAVE_UTF8)
+    buffer->type = UTF8_BUF;
+    buffer->str.u8str = (void *)"";
+    assert_true(buffer_text_visible_height(buffer) == 0);
+
+    buffer->str.u8str = (void *)"\n";
+    assert_true(buffer_text_visible_height(buffer) == 2);
+
+    buffer->str.u8str = (void *)"\n\n";
+    assert_true(buffer_text_visible_height(buffer) == 3);
+
+    buffer->str.u8str = (void *)"\n\n\n\n";
+    assert_true(buffer_text_visible_height(buffer) == 5);
+
+    buffer->str.u8str = (void *)"12345";
+    assert_true(buffer_text_visible_height(buffer) == 1);
+
+    buffer->str.u8str = (void *)"\n12345";
+    assert_true(buffer_text_visible_height(buffer) == 2);
+
+    buffer->str.u8str = (void *)"\n12345\n\n2";
     assert_true(buffer_text_visible_height(buffer) == 4);
 #endif
 

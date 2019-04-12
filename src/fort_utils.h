@@ -35,6 +35,8 @@ extern char g_col_separator;
 #define F_REALLOC fort_realloc
 #define F_STRDUP fort_strdup
 #define F_WCSDUP fort_wcsdup
+/* @todo: replace with custom impl !!!*/
+#define F_UTF8DUP utf8dup
 
 #define F_CREATE(type) ((type *)F_CALLOC(sizeof(type), 1))
 
@@ -58,9 +60,9 @@ enum str_buf_type {
 #ifdef FT_HAVE_WCHAR
     W_CHAR_BUF,
 #endif /* FT_HAVE_WCHAR */
-//#ifdef FT_HAVE_UTF8
-//    UTF8_BUF,
-//#endif /* FT_HAVE_WCHAR */
+#ifdef FT_HAVE_UTF8
+    UTF8_BUF,
+#endif /* FT_HAVE_WCHAR */
 };
 
 enum table_char_type {
@@ -113,7 +115,20 @@ struct fort_context {
     fort_table_properties_t *table_properties;
     size_t row;
     size_t column;
+
+    char *buf;
+    size_t width_available_in_cntx;
+    size_t width_written;
+    size_t raw_bytes_available;
+    size_t raw_bytes_written;
 };
+#define INIT_CONTEXT(cntx, buf, wid_avail, raw_bytes_avail) \
+    (cntx)->buf = (buf); \
+    (cntx)->width_available = (wid_avail); \
+    (cntx)->width_written = 0; \
+    (cntx)->raw_bytes_available = (raw_bytes_avail); \
+    (cntx)->raw_bytes_written = 0
+
 typedef struct fort_context context_t;
 typedef struct fort_column_properties fort_column_properties_t;
 typedef struct vector vector_t;
@@ -162,6 +177,9 @@ size_t number_of_columns_in_format_wstring(const wchar_t *fmt);
 
 FT_INTERNAL
 int snprint_n_strings(char *buf, size_t length, size_t n, const char *str);
+
+FT_INTERNAL
+int new_snprint_n_strings(context_t *cntx, size_t length, size_t n, const char *str);
 
 #if defined(FT_HAVE_WCHAR)
 FT_INTERNAL

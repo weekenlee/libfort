@@ -173,7 +173,7 @@ size_t number_of_columns_in_format_wstring(const wchar_t *fmt)
 #endif
 
 #if defined(FT_HAVE_UTF8)
-FT_INTERNAL
+//FT_INTERNAL
 size_t number_of_columns_in_format_u8string(const void *fmt)
 {
     size_t separator_counter = 0;
@@ -219,6 +219,19 @@ int snprint_n_strings(char *buf, size_t length, size_t n, const char *str)
             *(buf++) = *(str_p++);
     }
     return (int)(n * str_len);
+}
+
+FT_INTERNAL
+int new_snprint_n_strings(context_t *cntx, size_t length, size_t n, const char *str)
+{
+    char *buf = cntx->buf;
+    int wr = snprint_n_strings(buf, length, n, str);
+    cntx->width_written += wr;
+    cntx->raw_bytes_written += wr;
+    cntx->buf += wr;
+    assert(cntx->raw_bytes_written <= cntx->raw_bytes_available);
+    assert(cntx->width_written <= cntx->width_available);
+
 }
 
 
@@ -288,5 +301,34 @@ int wsnprint_n_string(wchar_t *buf, size_t length, size_t n, const char *str)
             *(buf++) = (wchar_t) * (str_p++);
     }
     return (int)(n * str_len);
+}
+#endif
+
+
+#if defined(FT_HAVE_UTF8)
+//FT_INTERNAL
+int u8nprint_n_strings(void *buf, size_t length, size_t n, const void *str)
+{
+    size_t str_size = utf8size(str) - 1; /* str_size - raw size in bytes, excluding \0 */
+    if (length <= n * str_size)
+        return -1;
+
+    if (n == 0)
+        return 0;
+
+    /* To ensure valid return value it is safely not print such big strings */
+    if (n * str_size > INT_MAX)
+        return -1;
+
+    if (str_size == 0)
+        return 0;
+
+    while (n) {
+        memcpy(buf, str, str_size);
+        buf = (char *)buf + str_size;
+        --n;
+    }
+    *(char *)buf = '\0';
+    return (int)(n * str_size);
 }
 #endif

@@ -612,7 +612,7 @@ const char *ft_to_string(const ft_table_t *table)
         if (table->conv_buffer == NULL)
             return NULL;
     }
-    while (string_buffer_capacity(table->conv_buffer) < sz) {
+    while (string_buffer_width_capacity(table->conv_buffer) < sz) {
         if (FT_IS_ERROR(realloc_string_buffer_without_copy(table->conv_buffer))) {
             return NULL;
         }
@@ -636,6 +636,8 @@ const char *ft_to_string(const ft_table_t *table)
     size_t i = 0;
     context_t context;
     context.table_properties = (table->properties ? table->properties : &g_table_properties);
+    INIT_CONTEXT(&context, sz, string_buffer_raw_bytes_capacity(table->conv_buffer));
+
     fort_row_t *prev_row = NULL;
     fort_row_t *cur_row = NULL;
     separator_t *cur_sep = NULL;
@@ -714,7 +716,7 @@ const wchar_t *ft_to_wstring(const ft_table_t *table)
         if (table->conv_buffer == NULL)
             return NULL;
     }
-    while (string_buffer_capacity(table->conv_buffer) < sz) {
+    while (string_buffer_width_capacity(table->conv_buffer) < sz) {
         if (FT_IS_ERROR(realloc_string_buffer_without_copy(table->conv_buffer))) {
             return NULL;
         }
